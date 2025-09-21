@@ -1,0 +1,7 @@
+﻿.vitepress/cache
+node_modules
+python/__pycache__
+.env
+Data/Daily
+Data/Temp
+python/__pycache__
