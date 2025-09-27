@@ -274,10 +274,15 @@
                 <div style="margin: 15px 0; text-align: center;">
                     <label style="font-weight:bold; color:#007bff;">自訂場數：</label>
                     <input type="number" v-model.number="customRounds" min="1" max="50" style="width:80px; margin-right:10px;" />
-                    <span style="color: #888;">（建議7~14場，預設10場）</span>
+                    <span style="color: #888;">（建議7~14場，預設14場）</span>
                 </div>
                 <div style="margin: 15px 0; text-align: center;">
                     <span style="color: #6f42c1; font-weight: bold;">如有 players.json 或 player.txt 檔案，會自動載入球員名單</span>
+                </div>
+                <div style="margin: 15px 0; text-align: center;">
+                    <textarea v-model="playerTextInput" rows="7" placeholder="可直接貼上player.txt內容（每行一人，可有標號）" style="width:90%;max-width:500px;"></textarea>
+                    <br>
+                    <button @click="parsePlayerText" class="btn btn-primary" style="margin-top:8px;">解析球員名單</button>
                 </div>
                 <div class="control-buttons">
                     <button @click="startGame" class="btn btn-success" :disabled="!canStartGame">
@@ -418,7 +423,7 @@
                 const players = ref(['', '', '', '', '', '', '']); // 7個球員
                 const gameStarted = ref(false);
                 const currentRound = ref(1);
-                const customRounds = ref(10); // 場數自訂
+                const customRounds = ref(14); // 場數自訂
 
                 // 球員狀態管理
                 const allPlayers = reactive([]);
@@ -679,6 +684,24 @@
                   URL.revokeObjectURL(url);
                 };
 
+                const playerTextInput = ref('');
+                // 解析textarea內容為球員陣列
+                const parsePlayerText = () => {
+                  const lines = playerTextInput.value.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+                  const names = lines.map(line => line.replace(/^\d+\.?\s*/, ''));
+                  names.forEach((name, idx) => {
+                    if (idx < players.value.length) {
+                      players.value[idx] = name;
+                    }
+                  });
+                  // 若貼上的人數比原本多，擴充players陣列
+                  if (names.length > players.value.length) {
+                    for (let i = players.value.length; i < names.length; i++) {
+                      players.value.push(names[i]);
+                    }
+                  }
+                };
+
                 return {
                     players,
                     gameStarted,
@@ -697,7 +720,9 @@
                     nextRound,
                     onJsonUpload,
                     customRounds,
-                    exportSchedule
+                    exportSchedule,
+                    playerTextInput,
+                    parsePlayerText
                 };
             }
         }).mount('#app');
