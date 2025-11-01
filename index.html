@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏸 羽球排點系統 — 首頁</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .setup-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .player-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .player-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .round-display {
+            text-align: center;
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .schedule-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border: 2px solid #667eea;
+        }
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .schedule-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            transition: all 0.3s;
+        }
+        .schedule-card.current {
+            border-color: #4CAF50;
+            background: #f0fff0;
+            transform: scale(1.02);
+        }
+        .auto-fill-btn {
+            background: #6f42c1;
+            color: white;
+            margin-left: 10px;
+        }
+        .court-area {
+            background: #e8f5e8;
+            border: 3px solid #4CAF50;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .rest-area {
+            background: #f5f5f5;
+            border: 3px solid #999;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .player-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid;
+            transition: transform 0.2s;
+        }
+        .player-card:hover {
+            transform: translateY(-2px);
+        }
+        .playing-card {
+            border-color: #4CAF50;
+            background: #f0fff0;
+        }
+        .resting-card {
+            border-color: #999;
+            background: #f9f9f9;
+        }
+        .next-card {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .stats-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            text-align: center;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .control-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+        .disabled {
+            opacity: 0.6;
+            cursor: not-allowed !important;
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        /* 預覽模式樣式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 22px;
+        }
+        .close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 12px;
+            border-radius: 50%;
+            color: white;
+            transition: background 0.3s;
+        }
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .preview-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: grid;
+            gap: 8px;
+            font-size: 15px;
+        }
+        .preview-info strong {
+            color: #667eea;
+        }
+        .preview-divider {
+            height: 2px;
+            background: linear-gradient(to right, transparent, #667eea, transparent);
+            margin: 20px 0;
+        }
+        .preview-schedule {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .preview-round {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+        .preview-round:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .current-preview {
+            background: #e8f5e9;
+            border-color: #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+        }
+        .preview-round-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .current-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .preview-playing,
+        .preview-resting {
+            margin: 8px 0;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+        .preview-label {
+            font-weight: bold;
+            min-width: 60px;
+            font-size: 15px;
+        }
+        .preview-playing .preview-label {
+            color: #4CAF50;
+        }
+        .preview-resting .preview-label {
+            color: #999;
+        }
+        .preview-names {
+            flex: 1;
+            color: #333;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .preview-stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff8e1;
+            border-radius: 10px;
+        }
+        .preview-stats h4 {
+            margin: 0 0 15px 0;
+            color: #f57c00;
+        }
+        .preview-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .preview-stat-item {
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 2px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .modal-footer .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+        @media (max-width: 768px) {
+            .modal-content {
+                max-height: 95vh;
+                margin: 10px;
+            }
+            .modal-header h2 {
+                font-size: 18px;
+            }
+            .preview-round-header {
+                font-size: 16px;
+            }
+            .preview-stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .modal-footer .btn {
+                min-width: 100px;
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>🏸 羽球排點系統 — 首頁</h1>
+            
+            <!-- 球員設定區域 -->
+            <div class="setup-section" v-if="!gameStarted">
+                <h2 style="text-align: center; margin-bottom: 20px;">🧑‍🤝‍🧑 球員設定</h2>
+                
+                <!-- 快速貼上解析區 -->
+                <div style="margin: 15px 0; text-align: center; background: #fff3e0; padding: 15px; border-radius: 8px;">
+                    <h3 style="margin-bottom: 10px; color: #f57c00;">📋 快速貼上活動公告</h3>
+                    <textarea v-model="playerTextInput" rows="7" placeholder="可直接貼上活動公告或球員名單（支援含標號、emoji 的文字）" style="width:90%;max-width:500px; padding: 10px; border: 2px solid #ff9800; border-radius: 5px;"></textarea>
+                    <br>
+                    <button @click="parsePlayerText" class="btn btn-primary" style="margin-top:8px;">📝 解析球員名單</button>
+                </div>
+
+                <!-- 球員輸入欄位 -->
+                <div style="margin: 20px 0;">
+                    <h3 style="text-align: center; margin-bottom: 15px;">👥 球員名單</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                        <input 
+                            v-for="(player, index) in players" 
+                            :key="index"
+                            v-model="players[index]" 
+                            :placeholder="`球員 ${index + 1} 姓名`"
+                            class="player-input"
+                        />
+                    </div>
+                </div>
+
+                <!-- 場數設定 -->
+                <div style="margin: 15px 0; text-align: center;">
+                    <label style="font-weight:bold; color:#007bff;">自訂場數：</label>
+                    <input type="number" v-model.number="customRounds" min="1" max="50" style="width:80px; margin-right:10px; padding: 8px; border: 2px solid #007bff; border-radius: 5px;" />
+                    <span style="color: #888;">（建議7~14場，預設14場）</span>
+                </div>
+
+                <!-- 控制按鈕 -->
+                <div class="control-buttons">
+                    <button @click="startGame" class="btn btn-success" :disabled="!canStartGame">
+                        🚀 開始排點
+                    </button>
+                    <button @click="autoFillPlayers" class="btn auto-fill-btn">
+                        ⚡ 自動填入範例
+                    </button>
+                    <button @click="resetPlayers" class="btn btn-warning">
+                        🔄 重設球員
+                    </button>
+                </div>
+                
+                <div style="margin: 10px 0; text-align: center;">
+                    <span style="color: #999; font-size: 12px;">💡 提示：可自動載入 players.json 或 player.txt</span>
+                </div>
+            </div>
+
+            <!-- 遊戲進行區域 -->
+            <div v-if="gameStarted">
+                <!-- 輪次顯示 -->
+                <div class="round-display">
+                    <div style="font-size: 32px;">第 {{ currentRound }} 場</div>
+                    <div style="font-size: 18px; margin-top: 10px;">
+                        (共 {{ totalRounds }} 場)
+                    </div>
+                </div>
+
+                <!-- 完整排程表 -->
+                <div class="schedule-section">
+                    <h3 style="text-align: center; margin-bottom: 15px;">📋 完整排程表 ({{ totalRounds }} 場)</h3>
+                    <div class="schedule-grid">
+                        <div 
+                            v-for="(round, index) in gameSchedule" 
+                            :key="index"
+                            class="schedule-card"
+                            :class="{ current: index === currentRound - 1 }"
+                        >
+                            <h4 style="margin-bottom: 10px; color: #333;">第 {{ index + 1 }} 場</h4>
+                            <div style="margin: 5px 0; font-weight: bold; color: #4CAF50;">
+                                🏸 上場: {{ round.playing.join(', ') }}
+                            </div>
+                            <div style="margin: 5px 0; color: #666;">
+                                🪑 休息: {{ round.resting.join(', ') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 球場區域 -->
+                <div class="court-area">
+                    <h3 style="text-align: center; margin-bottom: 15px;">🏸 球場區域 (4人上場)</h3>
+                    <div class="players-grid">
+                        <div 
+                            v-for="player in currentPlayers" 
+                            :key="player.name"
+                            class="player-card playing-card"
+                        >
+                            <h4 style="margin-bottom: 10px; color: #2e7d32;">{{ player.name }}</h4>
+                            <div>🏆 上場次數: {{ player.gamesPlayed }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 休息區域 -->
+                <div class="rest-area">
+                    <h3 style="text-align: center; margin-bottom: 15px;">🪑 休息區域 (3人等待)</h3>
+                    <div class="players-grid">
+                        <div 
+                            v-for="player in restingPlayers" 
+                            :key="player.name"
+                            class="player-card resting-card"
+                        >
+                            <h4 style="margin-bottom: 10px; color: #666;">{{ player.name }}</h4>
+                            <div>🏆 上場次數: {{ player.gamesPlayed }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 下場預告 -->
+                <div v-if="nextRoundPlayers.length > 0" style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 10px; padding: 20px; margin: 20px 0;">
+                    <h3 style="text-align: center; margin-bottom: 15px; color: #f57c00;">🔄 下場上場預告</h3>
+                    <div class="players-grid">
+                        <div 
+                            v-for="player in nextRoundPlayers" 
+                            :key="player.name"
+                            class="player-card next-card"
+                        >
+                            <h4 style="margin-bottom: 10px; color: #f57c00;">{{ player.name }}</h4>
+                            <div>🎯 下場即將上場</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 控制按鈕 -->
+                <div class="control-buttons">
+                    <button 
+                        v-if="currentRound < totalRounds" 
+                        @click="nextRound" 
+                        class="btn btn-primary"
+                    >
+                        ⏭️ 下一場 (第{{ currentRound + 1 }}場)
+                    </button>
+                    <button @click="resetGame" class="btn btn-danger">
+                        🔄 重新開始
+                    </button>
+                    <button @click="copyAllSchedule" class="btn btn-success">
+                        📋 複製所有排程
+                    </button>
+                </div>
+
+                <!-- 統計區域 -->
+                <div class="stats-section">
+                    <h3 style="text-align: center; margin-bottom: 15px;">📊 統計資訊</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card" v-for="player in allPlayers" :key="player.name">
+                            <h4 style="margin-bottom: 10px;">{{ player.name }}</h4>
+                            <div style="margin: 5px 0;">🏆 {{ player.gamesPlayed }} 次上場</div>
+                            <div style="margin: 5px 0;">📈 上場率: {{ Math.round((player.gamesPlayed / totalRounds) * 100) }}%</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: Math.round((player.gamesPlayed / totalRounds) * 100) + '%' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 遊戲結束提示 -->
+                <div v-if="currentRound > totalRounds" style="background: #d4edda; border: 2px solid #c3e6cb; border-radius: 10px; padding: 30px; text-align: center; margin: 30px 0;">
+                    <h2 style="color: #155724; margin-bottom: 15px;">🎉 所有場次完成！</h2>
+                    <p style="font-size: 18px; color: #155724;">{{ totalRounds }} 場比賽已全部完成，每位球友都獲得了公平的上場機會！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, onMounted, onUnmounted } = Vue;
+
+        createApp({
+            setup() {
+                // 基本設定
+                // 預設顯示 7 個可編輯欄位（可貼上或手動輸入）
+                const players = ref(Array(7).fill(''));
+                const gameStarted = ref(false);
+                const currentRound = ref(1);
+                const customRounds = ref(14); // 場數自訂
+                const playerTextInput = ref('');
+
+                // 球員狀態管理
+                const allPlayers = reactive([]);
+                const gameSchedule = ref([]); // 儲存完整的10場排程
+                
+                // 計算屬性
+                const canStartGame = computed(() => {
+                    const validNames = players.value.filter(name => name && name.trim() !== '');
+                    return validNames.length >= 4;
+                });
+
+                const totalRounds = computed(() => customRounds.value);
+
+                const currentPlayers = computed(() => {
+                    return allPlayers.filter(player => player.isPlaying);
+                });
+
+                const restingPlayers = computed(() => {
+                    return allPlayers.filter(player => !player.isPlaying);
+                });
+
+                const nextRoundPlayers = computed(() => {
+                    if (currentRound.value >= totalRounds.value) return [];
+                    
+                    // 根據下場的排程來顯示
+                    const nextRoundSchedule = gameSchedule.value[currentRound.value];
+                    if (!nextRoundSchedule) return [];
+                    
+                    const currentPlayingNames = currentPlayers.value.map(p => p.name);
+                    const nextPlayingNames = nextRoundSchedule.playing;
+                    
+                    // 找出下場會上場但現在沒上場的球員
+                    const newPlayers = nextPlayingNames.filter(name => !currentPlayingNames.includes(name));
+                    return allPlayers.filter(player => newPlayers.includes(player.name));
+                });
+
+                const sanitizeLineToName = (line) => {
+                    if (!line) return '';
+                    let cleaned = String(line).trim();
+                    if (!cleaned) return '';
+                    cleaned = cleaned.replace(/^[-–—_★☆•●◎▲◆▶➤►▸▹▪▫□■·•\s]+/, '');
+                    cleaned = cleaned.replace(/^[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]\s*/, '');
+                    cleaned = cleaned.replace(/^第?\d+\s*[場局輪]\s*/, '');
+                    cleaned = cleaned.replace(/^[A-Za-z]\.?\s*/, '');
+                    cleaned = cleaned.replace(/^\d+\s*[\.、\)\]\-:：]?\s*/, '');
+                    cleaned = cleaned.replace(/[\u{1F000}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]+$/gu, '');
+                    cleaned = cleaned.replace(/[🈵\s，。,、]+$/g, '');
+                    cleaned = cleaned.trim();
+                    if (!cleaned) return '';
+                    if (!/[A-Za-z\u4e00-\u9fff]/.test(cleaned)) return '';
+                    return cleaned;
+                };
+
+                const toUniqueList = (list) => {
+                    const unique = [];
+                    list.forEach(item => {
+                        if (item && !unique.includes(item)) {
+                            unique.push(item);
+                        }
+                    });
+                    return unique;
+                };
+
+                const extractNamesFromText = (text) => {
+                    if (!text) return [];
+                    const rawLines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+                    if (!rawLines.length) return [];
+
+                    const separatorIdx = rawLines.findIndex(line => /分隔線/.test(line) || /^[-–—_]{3,}$/.test(line));
+                    let lines = separatorIdx !== -1 ? rawLines.slice(separatorIdx + 1) : rawLines.slice();
+                    if (!lines.length) return [];
+
+                    let candidateLines = lines;
+                    if (separatorIdx === -1) {
+                        candidateLines = lines.filter(line => /^\d+/.test(line) || /^[①②③④⑤⑥⑦⑧⑨⑩]/.test(line) || /^[\-\*•●◎☆★▪▫□■▸▹▶➤]/.test(line));
+                        if (!candidateLines.length) {
+                            candidateLines = lines;
+                        }
+                    }
+
+                    const names = candidateLines
+                        .map(line => sanitizeLineToName(line))
+                        .filter(Boolean)
+                        .filter(name => name !== '🈵');
+
+                    return toUniqueList(names);
+                };
+
+                const applyPlayerNamesFromArray = (rawNames) => {
+                    if (!Array.isArray(rawNames)) return [];
+                    const names = toUniqueList(rawNames.map(name => sanitizeLineToName(name)));
+                    // 只取最多 7 名，並補足到 7 個輸入欄位
+                    players.value = names.slice(0, 7);
+                    while (players.value.length < 7) players.value.push('');
+                    return players.value.map(n => (n || '')).filter(n => n);
+                };
+
+                const applyPlayerNamesFromText = (text, { syncTextarea = false } = {}) => {
+                    const names = extractNamesFromText(text);
+                    if (syncTextarea) {
+                        playerTextInput.value = text;
+                    }
+                    // 只取最多 7 名並補齊到 7 個輸入欄位
+                    players.value = names.slice(0, 7);
+                    while (players.value.length < 7) players.value.push('');
+                    return players.value.map(n => (n || '')).filter(n => n);
+                };
+
+                const autoFillPlayers = () => {
+                    const sampleAnnouncement = `11/2 (日) 休假羽球日🏸\n時間: 14:00～16:00\n地點: 關聖里球館場地2號\n費用: 150元\n規則: 無Deuce\n人數: 6～7人止\n備註: 週五對外開放報名\n\n——————————《我是分隔線》\n1. 書書📚\n2. 長宏\n3. 阿民\n4. 岱育\n5. 小小戴\n6. 小P\n7. 群芝\n🈵`;
+                    const names = applyPlayerNamesFromText(sampleAnnouncement, { syncTextarea: true });
+                    if (!names.length) alert('範例內容解析失敗，請確認格式。');
+                };
+
+                const generateGameSchedule = () => {
+                    const playerNames = players.value.filter(n => n && n.trim() !== '');
+                    const schedule = [];
+                    const playerStats = {};
+                    playerNames.forEach(name => playerStats[name] = { gamesPlayed: 0, lastPlayed: -2 });
+                    for (let round = 0; round < totalRounds.value; round++) {
+                        const availablePlayers = playerNames.slice();
+                        availablePlayers.sort((a,b) => {
+                            const statsA = playerStats[a];
+                            const statsB = playerStats[b];
+                            if (statsA.gamesPlayed !== statsB.gamesPlayed) return statsA.gamesPlayed - statsB.gamesPlayed;
+                            const restTimeA = round - statsA.lastPlayed;
+                            const restTimeB = round - statsB.lastPlayed;
+                            return restTimeB - restTimeA;
+                        });
+                        const playingThisRound = availablePlayers.slice(0,4);
+                        const restingThisRound = availablePlayers.slice(4);
+                        playingThisRound.forEach(name => {
+                            playerStats[name].gamesPlayed++;
+                            playerStats[name].lastPlayed = round;
+                        });
+                        schedule.push({ playing: playingThisRound, resting: restingThisRound });
+                    }
+                    return schedule;
+                };
+
+                const initializePlayers = () => {
+                    allPlayers.length = 0;
+                    players.value.forEach(name => {
+                        if (name.trim()) allPlayers.push({ name: name.trim(), isPlaying: false, gamesPlayed: 0 });
+                    });
+                    gameSchedule.value = generateGameSchedule();
+                    if (gameSchedule.value.length > 0) {
+                        const firstRound = gameSchedule.value[0];
+                        allPlayers.forEach(player => {
+                            if (firstRound.playing.includes(player.name)) {
+                                player.isPlaying = true;
+                                player.gamesPlayed = 1;
+                            }
+                        });
+                    }
+                };
+
+                const startGame = () => {
+                    const valid = players.value.filter(n => n && n.trim() !== '');
+                    if (valid.length < 4) {
+                        alert('至少需要四位球員才能開始排點。');
+                        return;
+                    }
+                    initializePlayers();
+                    gameStarted.value = true;
+                    currentRound.value = 1;
+                };
+
+                const resetGame = () => {
+                    gameStarted.value = false;
+                    currentRound.value = 1;
+                    allPlayers.length = 0;
+                    gameSchedule.value = [];
+                };
+
+                const resetPlayers = () => {
+                    players.value = Array(7).fill('');
+                    playerTextInput.value = '';
+                };
+
+                const nextRound = () => {
+                    if (currentRound.value >= totalRounds.value) return;
+                    currentRound.value++;
+                    if (currentRound.value <= totalRounds.value) {
+                        const roundSchedule = gameSchedule.value[currentRound.value - 1];
+                        allPlayers.forEach(player => player.isPlaying = false);
+                        allPlayers.forEach(player => {
+                            if (roundSchedule.playing.includes(player.name)) {
+                                player.isPlaying = true;
+                                player.gamesPlayed++;
+                            }
+                        });
+                    }
+                };
+
+                const loadPlayersFromTxt = () => {
+                    fetch('player.txt')
+                        .then(res => (res && res.ok ? res.text() : null))
+                        .then(txt => {
+                            if (txt) {
+                                const names = applyPlayerNamesFromText(txt, { syncTextarea: true });
+                                if (!names.length) playerTextInput.value = txt;
+                            }
+                        })
+                        .catch(() => {});
+                };
+
+                onMounted(() => {
+                    fetch('players.json')
+                        .then(res => (res && res.ok ? res.json() : null))
+                        .then(json => {
+                            if (json && Array.isArray(json.players)) {
+                                const names = applyPlayerNamesFromArray(json.players);
+                                if (names.length) {
+                                    playerTextInput.value = names.map((name, idx) => `${idx + 1}. ${name}`).join('\n');
+                                } else {
+                                    loadPlayersFromTxt();
+                                }
+                            } else {
+                                loadPlayersFromTxt();
+                            }
+                        })
+                        .catch(() => {
+                            loadPlayersFromTxt();
+                        });
+                });
+
+                onUnmounted(() => {});
+
+                const copyAllSchedule = () => {
+                    if (gameSchedule.value.length === 0) {
+                        alert('請先開始排點後再複製排程！');
+                        return;
+                    }
+                    let txt = '🏸 羽球排點結果\n\n';
+                    gameSchedule.value.forEach((round, idx) => {
+                        txt += `第 ${idx + 1} 場\n`;
+                        txt += `上場: ${round.playing.join('、')}\n`;
+                        txt += `休息: ${round.resting.join('、')}\n\n`;
+                    });
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(txt).then(() => alert('✅ 已複製所有排程到剪貼簿！')).catch(() => fallbackTextareaCopy(txt));
+                    } else {
+                        fallbackTextareaCopy(txt);
+                    }
+                };
+
+                const fallbackTextareaCopy = (text) => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.top = '0';
+                    textarea.style.left = '0';
+                    textarea.style.width = '2em';
+                    textarea.style.height = '2em';
+                    textarea.style.padding = '0';
+                    textarea.style.border = 'none';
+                    textarea.style.outline = 'none';
+                    textarea.style.boxShadow = 'none';
+                    textarea.style.background = 'transparent';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) alert('✅ 已複製所有排程到剪貼簿！');
+                        else prompt('請手動複製以下內容：', text);
+                    } catch (err) {
+                        prompt('請手動複製以下內容：', text);
+                    } finally {
+                        document.body.removeChild(textarea);
+                    }
+                };
+
+                const parsePlayerText = () => {
+                    if (!playerTextInput.value || !playerTextInput.value.trim()) {
+                        alert('請先貼上球員名單內容');
+                        return;
+                    }
+                    const names = extractNamesFromText(playerTextInput.value);
+                    if (!names.length) {
+                        alert('找不到球員名單，請確認格式。');
+                        return;
+                    }
+                    players.value = names.slice(0, 7);
+                    while (players.value.length < 7) players.value.push('');
+                };
+
+                return {
+                    players,
+                    gameStarted,
+                    currentRound,
+                    allPlayers,
+                    gameSchedule,
+                    canStartGame,
+                    totalRounds,
+                    currentPlayers,
+                    restingPlayers,
+                    nextRoundPlayers,
+                    autoFillPlayers,
+                    startGame,
+                    resetGame,
+                    resetPlayers,
+                    nextRound,
+                    customRounds,
+                    playerTextInput,
+                    parsePlayerText,
+                    copyAllSchedule
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
